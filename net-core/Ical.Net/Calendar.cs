@@ -32,7 +32,19 @@ namespace Ical.Net
             => Load<T>(new StreamReader(s, e));
 
         public static IList<T> Load<T>(TextReader tr)
-            => SimpleDeserializer.Default.Deserialize(tr).OfType<T>().ToList();
+        {
+            var deserializer = SimpleDeserializer.Default;
+            try
+            {
+                var list = deserializer.Deserialize(tr).OfType<T>().ToList();
+                return list;
+            }
+            catch (Exception ex)
+            {
+                string info = deserializer.GetDeserializeLastLineExceptionMsg(ex.Message);
+                throw new Exception(info, ex);
+            }
+        }
 
         public static IList<T> Load<T>(string ical)
             => Load<T>(new StringReader(ical));

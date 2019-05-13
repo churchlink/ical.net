@@ -28,7 +28,19 @@ namespace Ical.Net
 
         public static CalendarCollection Load(TextReader tr)
         {
-            var calendars = SimpleDeserializer.Default.Deserialize(tr).OfType<Calendar>();
+            var deserializer = SimpleDeserializer.Default;
+
+            Calendar[] calendars = null;
+            try
+            {
+                calendars = SimpleDeserializer.Default.Deserialize(tr).OfType<Calendar>().ToArray();
+            }
+            catch (Exception ex)
+            {
+                string info = deserializer.GetDeserializeLastLineExceptionMsg(ex.Message);
+                throw new Exception(info, ex);
+            }
+
             var collection = new CalendarCollection();
             collection.AddRange(calendars);
             return collection;
