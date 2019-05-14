@@ -502,5 +502,97 @@ END:VCALENDAR
             for (var i = 0; i < props.Count; i++)
                 Assert.AreEqual("2." + i, props[i].Value);
         }
+
+        [Test, Category("Deserialization")]
+        public void GetContentLines_WLineNumbers()
+        {
+            string text =
+@"HI!
+Okay: waterm
+ ellons.
+
+
+How are
+ you?
+
+The end is nigh
+
+";
+
+            KeyValuePair<string, int>[] expected = {
+                new KeyValuePair<string, int>("HI!", 0),
+                new KeyValuePair<string, int>("Okay: watermellons.", 1),
+                new KeyValuePair<string, int>("How areyou?", 5),
+                new KeyValuePair<string, int>("The end is nigh", 8),
+            };
+
+            var arr = SimpleDeserializer
+               .GetContentLinesWithLineNumbers(new StringReader(text))
+               .ToArray();
+
+            bool isEq = _KVStringIntArrMatch(arr, expected);
+            Assert.True(isEq);
+
+            expected[0] = new KeyValuePair<string, int>(expected[0].Key, 3);
+
+            isEq = _KVStringIntArrMatch(arr, expected);
+            Assert.False(isEq);
+        }
+
+        [Test, Category("Deserialization")]
+        public void GetContentLines_WLineNumbers_StartsEndsWithWS()
+        {
+            string text =
+@"
+
+HI!
+Okay: waterm
+ ellons.
+
+
+How are
+ you?
+
+The end is nigh
+
+";
+
+            KeyValuePair<string, int>[] expected = {
+                new KeyValuePair<string, int>("HI!", 2),
+                new KeyValuePair<string, int>("Okay: watermellons.", 3),
+                new KeyValuePair<string, int>("How areyou?", 7),
+                new KeyValuePair<string, int>("The end is nigh", 10),
+            };
+
+            var arr = SimpleDeserializer
+               .GetContentLinesWithLineNumbers(new StringReader(text))
+               .ToArray();
+
+            bool isEq = _KVStringIntArrMatch(arr, expected);
+            Assert.True(isEq);
+        }
+
+        bool _KVStringIntArrMatch(
+            KeyValuePair<string, int>[] arr,
+            KeyValuePair<string, int>[] expected)
+        {
+            if (arr == null || expected == null)
+                return false;
+
+            if (arr.Length != expected.Length)
+                return false;
+
+            for (int i = 0; i < arr.Length; i++)
+            {
+                bool match = arr[i].Key == expected[i].Key &&
+                    arr[i].Value == expected[i].Value;
+
+                if (!match)
+                    return false;
+            }
+
+            return true;
+        }
+
     }
 }

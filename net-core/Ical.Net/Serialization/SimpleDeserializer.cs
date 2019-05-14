@@ -69,22 +69,17 @@ namespace Ical.Net.Serialization
             return contentLine;
         }
 
-        int ___deserializeLastLineNumHit = -1;
-        int ___deserializeLastLineNumHitOrig = -1;
-        string ___deserializeLastLineHitStr;
+        int _lastLineI = -1;
+        int _lastLineNum = -1;
+        string _lastLine;
 
         public string GetDeserializeLastLineExceptionMsg(string origExMsg)
         {
-            int lnNum = ___deserializeLastLineNumHit;
-            int lnNumOrig = ___deserializeLastLineNumHitOrig;
-            string lastLnErr = ___deserializeLastLineHitStr;
-
-            if (lnNum < 0)
+            if (_lastLineI < 0)
                 return null;
 
-            string errorMsg = $@"Ical parse exception:
-Line number: `{lnNumOrig}` (`{lnNum}` after line breaks removed)
-Line: `{lastLnErr}`
+            string errorMsg = $@"Ical parse exception (line {_lastLineNum} ['{_lastLineI}']):
+""{_lastLine}""
 
 Original exception message: `{origExMsg}`";
             return errorMsg;
@@ -96,32 +91,12 @@ Original exception message: `{origExMsg}`";
             var stack = new Stack<ICalendarComponent>();
             var current = default(ICalendarComponent);
 
-            string[] lines;
-            int linesCount;
-            List<int> origLineNumbers = new List<int>();
-
-            try
+            int i = 0;
+            foreach (var kv in GetContentLinesWithLineNumbers(reader))
             {
-                lines = GetContentLines(reader, origLineNumbers).ToArray();
-
-                linesCount = lines?.Length ?? 0;
-
-                int isShortLen = linesCount - origLineNumbers.Count;
-                if (isShortLen > 0) // shouldn't happen! should == 0. but to not throw exception, fill with -1 for expected remainder
-                    origLineNumbers.AddRange(Enumerable.Repeat(-1, isShortLen));
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-
-            for (int i = 0; i < linesCount; i++)
-            { // foreach (var contentLineString in GetContentLines(reader)) {
-
-                string line = lines[i];
-                ___deserializeLastLineNumHit = i;
-                ___deserializeLastLineNumHitOrig = origLineNumbers[i];
-                ___deserializeLastLineHitStr = line;
+                _lastLineI = i++;
+                int currLnNum = _lastLineNum = kv.Value;
+                string line = _lastLine = kv.Key;
 
                 CalendarProperty contentLine = ParseContentLine(context, line);
 
@@ -167,8 +142,8 @@ Original exception message: `{origExMsg}`";
             }
 
             // clear these if there was no exception
-            ___deserializeLastLineNumHit = -1;
-            ___deserializeLastLineHitStr = null;
+            _lastLineI = -1;
+            _lastLine = null;
         }
 
         private CalendarProperty ParseContentLine(SerializationContext context, string input)
@@ -231,16 +206,52 @@ Original exception message: `{origExMsg}`";
             }
         }
 
-        public static IEnumerable<string> GetContentLines(
-            TextReader reader,
-            List<int> origLineNumbers)
+        private static IEnumerable<string> GetContentLines(TextReader reader)
         {
+            var currentLine = new StringBuilder();
+            while (true)
+            {
+                var nextLine = reader.ReadLine();
+                if (nextLine == null)
+                {
+                    break;
+                }
+
+                if (nextLine.Length <= 0)
+                {
+                    continue;
+                }
+
+                if ((nextLine[0] == ' ' || nextLine[0] == '\t'))
+                {
+                    currentLine.Append(nextLine, 1, nextLine.Length - 1);
+                }
+                else
+                {
+                    if (currentLine.Length > 0)
+                    {
+                        yield return currentLine.ToString();
+                    }
+                    currentLine.Clear();
+                    currentLine.Append(nextLine);
+                }
+            }
+            if (currentLine.Length > 0)
+            {
+                yield return currentLine.ToString();
+            }
+        }
+
+        public static IEnumerable<KeyValuePair<string, int>> GetContentLinesWithLineNumbers(TextReader reader)
+        {
+            int i = -1;
+            int currLn = 0;
             var sbCurrLine = new StringBuilder();
 
-            int i = -1;
             while (true)
             {
                 i++;
+
                 string nextLine = reader.ReadLine();
                 if (nextLine == null)
                     break;
@@ -250,25 +261,27 @@ Original exception message: `{origExMsg}`";
 
                 char firstCh = nextLine[0];
 
-                if (firstCh == ' ' || firstCh == '\t')
-                { // if first char is a space or a tab
+                if (firstCh == ' ' || firstCh == '\t') // if first char is a space or a tab
+                { 
                     sbCurrLine.Append(nextLine, 1, nextLine.Length - 1);
                 }
                 else
                 {
                     if (sbCurrLine.Length > 0)
                     {
-                        yield return sbCurrLine.ToString();
+                        yield return new KeyValuePair<string, int>(sbCurrLine.ToString(), currLn);
                     }
-                    origLineNumbers.Add(i);
+
+                    currLn = i;
                     sbCurrLine.Clear();
                     sbCurrLine.Append(nextLine);
                 }
             }
             if (sbCurrLine.Length > 0)
             {
-                yield return sbCurrLine.ToString();
+                yield return new KeyValuePair<string, int>(sbCurrLine.ToString(), currLn);
             }
         }
+
     }
 }
