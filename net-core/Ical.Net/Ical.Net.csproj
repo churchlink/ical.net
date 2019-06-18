@@ -1,21 +1,26 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net46</TargetFrameworks>
-
+    <!--<TargetFrameworks>netstandard2.0;net46</TargetFrameworks>-->
+    <TargetFramework>netstandard2.0</TargetFramework>
     <Version>4.1.10.1</Version>
     <AssemblyVersion>4.1.10.1</AssemblyVersion>
     <FileVersion>4.1.10.1</FileVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
-    <Authors>Rian Stockbower, Douglas Day</Authors>
+    <Authors>Rian Stockbower, Douglas Day, Nicholas Petersen</Authors>
     <Company />
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\IcalNetStrongnameKey.snk</AssemblyOriginatorKeyFile>
+    <!--
     <DebugSymbols Condition=" '$(TargetFramework)' == 'net46' ">true</DebugSymbols>
     <DebugType Condition=" '$(TargetFramework)' == 'net46' ">full</DebugType>
+    -->
+    <NoWarn>1591;1574;1573;</NoWarn>
+    <PackageId>Ical.Net.Core</PackageId>
+    <Product>Ical.Net.Core</Product>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DocumentationFile>bin\Release\Ical.Net.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\Ical.Net.Core.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NodaTime" Version="2.0.2" />
